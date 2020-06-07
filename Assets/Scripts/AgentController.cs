@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class AgentController : MonoBehaviour
 {
@@ -11,7 +8,7 @@ public class AgentController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-     
+        
     }
 
     // Update is called once per frame
@@ -25,23 +22,23 @@ public class AgentController : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.W))
         {
-            transform.Translate(0f, -.01f, 0f);
-            energy -= 0.003f;
+            transform.Translate(0f, 0f, 0.04f);
+            energy -= 0.009f;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            transform.Translate(0f, .01f, 0f);
-            energy -= 0.003f;
+            transform.Translate(0f, 0f, -0.04f);
+            energy -= 0.009f;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            transform.Rotate(0f, 0f, -1f);
-            energy -= 0.003f;
+            transform.Rotate(0f, -1f, 0f);
+            energy -= 0.009f;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            transform.Rotate(0f, 0f, 1f);
-            energy -= 0.003f;
+            transform.Rotate(0f, 1f, 0f);
+            energy -= 0.009f;
         }
     }
     void UpdateStatus()
@@ -53,8 +50,9 @@ public class AgentController : MonoBehaviour
         if (health < 0)
         {
             Debug.Log("Die!");
+            Destroy(this);
         }
-        if (is_poisoned) health -= 0.3f;
+        if (is_poisoned) health -= 0.09f;
         if (energy < 10)
         {
             health -= 0.01f;
@@ -62,9 +60,19 @@ public class AgentController : MonoBehaviour
     }
     void OnEat()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
-        if (Physics.Raycast(ray, out hit, 100))
-            Debug.DrawLine(ray.origin, hit.point);
+        Ray ray = new Ray(transform.position, transform.forward);
+        //Debug.DrawRay(transform.position, transform.forward ,Color.red);
+        if (Physics.Raycast(ray, out hit, 0.5f)){
+            GameObject hit_object = hit.collider.gameObject;
+            Debug.Log("The agent found " +hit_object.name);
+            if (Input.GetKey(KeyCode.E) && ( hit_object.name == "mushroom" || hit_object.name == "apple"))
+            {
+                if (hit_object.name == "mushroom") is_poisoned = true;
+                energy += 5f;
+                Destroy(hit_object);
+            }
+        }
+
     }
 }
