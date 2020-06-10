@@ -1,18 +1,51 @@
 ﻿using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Sensors;
 
-public class AgentController : MonoBehaviour
+public class AgentController : Agent
 {
     public float health = 100;
     public float energy = 100;
     bool is_poisoned = false;
     // Start is called before the first frame update
+    
+    float WSdir=0.0f;
+    float ADdir=0.0f;
+
+    RenderTextureSensorComponent rtc;
     void Start()
     {
-        
+        rtc = GetComponent<RenderTextureSensorComponent>();
+    }
+    
+    public override void OnEpisodeBegin()
+    {
+    }
+    
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        // Target and Agent positions
+        sensor.AddObservation(health);
+        sensor.AddObservation(energy);
+
+        // Agent velocity
+        sensor.AddObservation(rtc);
+    }
+    
+    public override void OnActionReceived(float[] vectorAction)
+    {
+        if(vectorAction.Length < 2) return;
+        print("action received! " + vectorAction[0].ToString() + " " + vectorAction[1].ToString());
+        WSdir=vectorAction[0];
+        ADdir=vectorAction[1];
+          
+        //SetReward(1.0f);
+        //EndEpisode();
+        MyUpdate();
     }
 
     // Update is called once per frame
-    void Update()
+    void MyUpdate()
     {
         Controller();
         UpdateStatus();
@@ -20,26 +53,10 @@ public class AgentController : MonoBehaviour
     }
     void Controller()
     {
-        if (Input.GetKey(KeyCode.W))
-        {
-            transform.Translate(0f, 0f, 0.04f);
-            energy -= 0.009f;
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            transform.Translate(0f, 0f, -0.04f);
-            energy -= 0.009f;
-        }
-        if (Input.GetKey(KeyCode.A))
-        {
-            transform.Rotate(0f, -1f, 0f);
-            energy -= 0.009f;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            transform.Rotate(0f, 1f, 0f);
-            energy -= 0.009f;
-        }
+        transform.Translate(0f, 0f, WSdir * 0.04f);
+        energy -= Mathf.Abs(WSdir)*0.009f;
+        transform.Rotate(0f, ADdir * 1.0f, 0f);
+        energy -= Mathf.Abs(ADdir)*0.009f;
     }
     void UpdateStatus()
     {
@@ -50,7 +67,8 @@ public class AgentController : MonoBehaviour
         if (health < 0)
         {
             Debug.Log("Die!");
-            Destroy(this);
+            //Destroy(this);
+            EndEpisode();
         }
         if (is_poisoned) health -= 0.09f;
         if (energy < 10)
@@ -66,8 +84,9 @@ public class AgentController : MonoBehaviour
         if (Physics.Raycast(ray, out hit, 0.5f)){
             GameObject hit_object = hit.collider.gameObject;
             Debug.Log("The agent found " +hit_object.name);
-            if (Input.GetKey(KeyCode.E) && ( hit_object.name == "mushroom" || hit_object.name == "apple"))
+            if (/*Input.GetKey(KeyCode.E) &&*/ ( hit_object.name == "mushroom" || hit_object.name == "apple"))
             {
+                SetReward(1.0f);
                 if (hit_object.name == "mushroom") is_poisoned = true;
                 energy += 5f;
                 Destroy(hit_object);
